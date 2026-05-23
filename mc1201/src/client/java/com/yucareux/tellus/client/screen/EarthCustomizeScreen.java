@@ -12,6 +12,7 @@ import com.yucareux.tellus.client.widget.CustomizationList;
 import com.yucareux.tellus.client.widget.WidgetCompat;
 import com.yucareux.tellus.worldgen.EarthChunkGenerator;
 import com.yucareux.tellus.worldgen.EarthGeneratorSettings;
+import com.yucareux.tellus.worldgen.SurfaceDepthLimit;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -395,6 +396,8 @@ public class EarthCustomizeScreen extends Screen {
       );
       int oceanShorelineBlend = (int)Math.round(this.findSliderValue("ocean_shoreline_blend", EarthGeneratorSettings.DEFAULT.oceanShorelineBlend()));
       boolean shorelineBlendCliffLimit = this.findToggleValue("shoreline_blend_cliff_limit", EarthGeneratorSettings.DEFAULT.shorelineBlendCliffLimit());
+      boolean surfaceDepthLimitEnabled = this.findToggleValue("surface_depth_limit_enabled", EarthGeneratorSettings.DEFAULT.surfaceDepthLimitEnabled());
+      int surfaceDepthLimit = (int)Math.round(this.findSliderValue("surface_depth_limit", EarthGeneratorSettings.DEFAULT.surfaceDepthLimit()));
       boolean caveGeneration = this.findToggleValue("cave_generation", EarthGeneratorSettings.DEFAULT.caveGeneration());
       boolean oreDistribution = this.findToggleValue("ore_distribution", EarthGeneratorSettings.DEFAULT.oreDistribution());
       boolean lavaPools = this.findToggleValue("lava_pools", EarthGeneratorSettings.DEFAULT.lavaPools());
@@ -500,8 +503,8 @@ public class EarthCustomizeScreen extends Screen {
          enableRoads,
          enableBuildings,
          enableWater,
-         EarthGeneratorSettings.DEFAULT.surfaceDepthLimitEnabled(),
-         EarthGeneratorSettings.DEFAULT.surfaceDepthLimit()
+         surfaceDepthLimitEnabled,
+         surfaceDepthLimit
       );
    }
 
@@ -543,6 +546,8 @@ public class EarthCustomizeScreen extends Screen {
       this.setSliderValue("river_lake_shoreline_blend", initialSettings.riverLakeShorelineBlend());
       this.setSliderValue("ocean_shoreline_blend", initialSettings.oceanShorelineBlend());
       this.setToggleValue("shoreline_blend_cliff_limit", initialSettings.shorelineBlendCliffLimit());
+      this.setToggleValue("surface_depth_limit_enabled", initialSettings.surfaceDepthLimitEnabled());
+      this.setSliderValue("surface_depth_limit", initialSettings.surfaceDepthLimit());
       this.setToggleValue("cave_generation", initialSettings.caveGeneration());
       this.setToggleValue("ore_distribution", initialSettings.oreDistribution());
       this.setToggleValue("lava_pools", initialSettings.lavaPools());
@@ -811,6 +816,8 @@ public class EarthCustomizeScreen extends Screen {
          new EarthCustomizeScreen.CategoryDefinition(
             "geological",
             List.of(
+               toggle("surface_depth_limit_enabled", EarthGeneratorSettings.DEFAULT.surfaceDepthLimitEnabled()),
+               slider("surface_depth_limit", EarthGeneratorSettings.DEFAULT.surfaceDepthLimit(), SurfaceDepthLimit.MIN_DEPTH, SurfaceDepthLimit.MAX_DEPTH, 1.0),
                toggle("cave_generation", EarthGeneratorSettings.DEFAULT.caveGeneration()),
                toggle("ore_distribution", EarthGeneratorSettings.DEFAULT.oreDistribution()),
                toggle("lava_pools", EarthGeneratorSettings.DEFAULT.lavaPools())
