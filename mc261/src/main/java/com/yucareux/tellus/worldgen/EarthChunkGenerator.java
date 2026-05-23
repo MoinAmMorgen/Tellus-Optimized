@@ -585,7 +585,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
        ChunkAccess chunk
    ) {
       long totalStartNs = beginFullChunkProfiling();
-      if (!SharedConstants.DEBUG_DISABLE_CARVERS && this.settings.caveGeneration()) {
+      if (!SharedConstants.DEBUG_DISABLE_CARVERS && this.settings.effectiveCaveGeneration()) {
          long phaseStartNs = beginFullChunkProfiling();
          boolean[] waterFlags = new boolean[CHUNK_AREA];
          WaterSurfaceResolver.WaterChunkData waterData = this.resolveChunkWaterData(chunk.getPos());
@@ -656,7 +656,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
          phaseStartNs = beginFullChunkProfiling();
          super.applyBiomeDecoration(level, chunk, structures);
          endFullChunkProfiling(EarthChunkGenerator.FullChunkPhase.DECORATION_SUPER, phaseStartNs);
-         if (this.settings.caveGeneration()) {
+         if (this.settings.effectiveCaveGeneration()) {
             phaseStartNs = beginFullChunkProfiling();
             this.spawnAxolotlsInLushPonds(level, chunk);
             endFullChunkProfiling(EarthChunkGenerator.FullChunkPhase.DECORATION_AXOLOTLS, phaseStartNs);
@@ -8065,15 +8065,15 @@ public final class EarthChunkGenerator extends ChunkGenerator {
 
    private static int geologyFlags(EarthGeneratorSettings settings, boolean keepTrees) {
       int flags = 0;
-      if (settings.caveGeneration()) {
+      if (settings.effectiveCaveGeneration()) {
          flags |= 1;
       }
 
-      if (settings.oreDistribution()) {
+      if (settings.effectiveOreDistribution()) {
          flags |= 2;
       }
 
-      if (settings.lavaPools()) {
+      if (settings.effectiveLavaPools()) {
          flags |= 4;
       }
 
@@ -8097,7 +8097,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
    }
 
    private static boolean shouldKeepCarverId(String path, EarthGeneratorSettings settings) {
-      return settings.caveGeneration() || !path.equals("cave") && !path.equals("cave_extra_underground") && !path.equals("canyon");
+      return settings.effectiveCaveGeneration() || !path.equals("cave") && !path.equals("cave_extra_underground") && !path.equals("canyon");
    }
 
    private static boolean shouldKeepFeature(Holder<PlacedFeature> feature, EarthGeneratorSettings settings) {
@@ -8107,13 +8107,13 @@ public final class EarthChunkGenerator extends ChunkGenerator {
    private static boolean shouldKeepFeatureId(String path, EarthGeneratorSettings settings) {
       if (path.equals("freeze_top_layer") || path.equals("snow_and_freeze")) {
          return false;
-      } else if (!settings.oreDistribution() && path.startsWith("ore_")) {
+      } else if (!settings.effectiveOreDistribution() && path.startsWith("ore_")) {
          return false;
       } else if (!settings.geodes() && path.contains("geode")) {
          return false;
       } else if (settings.deepDark() || !path.contains("sculk") && !path.contains("deep_dark")) {
-         return settings.caveGeneration() || !path.contains("dripstone") && !path.startsWith("spring_water")
-            ? settings.lavaPools() || !path.startsWith("lake_lava") && !path.startsWith("spring_lava")
+         return settings.effectiveCaveGeneration() || !path.contains("dripstone") && !path.startsWith("spring_water")
+            ? settings.effectiveLavaPools() || !path.startsWith("lake_lava") && !path.startsWith("spring_lava")
             : false;
       } else {
          return false;

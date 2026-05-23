@@ -167,7 +167,7 @@ public final class EarthBiomeSource extends BiomeSource {
             ? this.waterResolver.resolveFastColumnData(blockX, blockZ, rawCoverClass)
             : this.waterResolver.resolveColumnData(blockX, blockZ, rawCoverClass);
          Holder<Biome> surfaceBiome = this.resolveSurfaceBiomeAtBlock(blockX, blockZ, rawCoverClass, visualCoverClass, column, null);
-         if (!this.settings.caveGeneration()) {
+         if (!this.settings.effectiveCaveGeneration()) {
             return surfaceBiome;
          } else {
             int depth = column.terrainSurface() - blockY;
@@ -273,7 +273,7 @@ public final class EarthBiomeSource extends BiomeSource {
       holders.add(this.river);
       holders.add(this.frozenPeaks);
       holders.add(this.mangrove);
-      if (this.settings.caveGeneration()) {
+      if (this.settings.effectiveCaveGeneration()) {
          addIfPresent(holders, this.lushCaves);
          addIfPresent(holders, this.dripstoneCaves);
          if (this.settings.deepDark()) {
