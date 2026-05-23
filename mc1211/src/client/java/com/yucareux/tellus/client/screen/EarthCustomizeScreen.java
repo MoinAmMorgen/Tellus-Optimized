@@ -519,7 +519,9 @@ public class EarthCustomizeScreen extends Screen {
          demSelection,
          enableRoads,
          enableBuildings,
-         enableWater
+         enableWater,
+         EarthGeneratorSettings.DEFAULT.surfaceDepthLimitEnabled(),
+         EarthGeneratorSettings.DEFAULT.surfaceDepthLimit()
       );
    }
 
