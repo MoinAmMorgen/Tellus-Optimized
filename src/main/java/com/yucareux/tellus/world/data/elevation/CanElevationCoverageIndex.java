@@ -15,7 +15,7 @@ import java.util.Locale;
 import java.util.Objects;
 import org.tukaani.xz.SingleXZInputStream;
 
-final class CanElevationCoverageIndex {
+public final class CanElevationCoverageIndex {
    private static final String DEFAULT_RESOURCE_PATH = "/tellus/elevation/canelevation_index.json.xz";
    private static final int LON_CELLS = 360;
    private static final int LAT_CELLS = 180;
@@ -23,7 +23,7 @@ final class CanElevationCoverageIndex {
    private final ThreadLocal<CanElevationCoverageIndex.LookupState> lookupState = ThreadLocal.withInitial(CanElevationCoverageIndex.LookupState::new);
    private volatile CanElevationCoverageIndex.Index index;
 
-   static CanElevationCoverageIndex create() {
+   public static CanElevationCoverageIndex create() {
       return new CanElevationCoverageIndex(DEFAULT_RESOURCE_PATH);
    }
 
@@ -35,7 +35,7 @@ final class CanElevationCoverageIndex {
       return this.loadIndex().available;
    }
 
-   boolean containsCanada(double lat, double lon) {
+   public boolean containsCanada(double lat, double lon) {
       CanElevationCoverageIndex.Index loaded = this.loadIndex();
       return loaded.available && this.containsCanada(loaded, lon, lat);
    }
