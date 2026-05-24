@@ -519,7 +519,8 @@ public class EarthCustomizeScreen extends Screen {
          demSelection,
          enableRoads,
          enableBuildings,
-         enableWater
+         enableWater,
+         EarthGeneratorSettings.DEFAULT.treeDensity()
       );
    }
 
