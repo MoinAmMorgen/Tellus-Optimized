@@ -1,0 +1,2 @@
+{ "trees_per_chunk": 9,
+  "species": [ { "id": "tellus:test/spruce", "weight": 100 } ] }

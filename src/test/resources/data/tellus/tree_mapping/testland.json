@@ -1,0 +1,3 @@
+{ "country": "testland",
+  "rules": [ { "koppen": "Dfc", "esa": "TreeCover", "palette": "tellus:test_boreal" } ],
+  "fallback": "tellus:vanilla_default" }
