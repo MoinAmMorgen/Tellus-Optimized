@@ -27,6 +27,8 @@ import com.yucareux.tellus.worldgen.building.BuildingPlacementSupport;
 import com.yucareux.tellus.worldgen.building.TellusBuildingProfiles;
 import com.yucareux.tellus.worldgen.caves.TellusNoiseSettingsAdapter;
 import com.yucareux.tellus.worldgen.caves.TellusVanillaCarverRunner;
+import com.yucareux.tellus.worldgen.trees.RegionalTreePlacer;
+import com.yucareux.tellus.worldgen.trees.TreePaletteRegistry;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -3879,14 +3881,33 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                            BlockPos position = ground.above();
                            Holder<Biome> biome = decorationContext != null ? decorationContext.biome(localX, localZ) : level.getBiome(position);
                            if (!biome.is(Biomes.MANGROVE_SWAMP)) {
-                              List<ConfiguredFeature<?, ?>> features = treeFeaturesForBiome(biome);
-                              if (!features.isEmpty()) {
+                              double worldScale = this.settings.worldScale();
+                              double lat = EarthProjection.blockZToLat((double) worldZ, worldScale);
+                              double lon = (double) worldX / EarthProjection.blocksPerDegree(worldScale);
+                              String koppen = KOPPEN_SOURCE.sampleDitheredCode((double) worldX, (double) worldZ, worldScale);
+                              int esaCode = LAND_COVER_SOURCE.sampleCoverClass((double) worldX, (double) worldZ, worldScale);
+                              String esa = esaName(esaCode);
+                              String paletteId = (koppen == null)
+                                  ? TreePaletteRegistry.VANILLA_DEFAULT_ID
+                                  : RegionalTreePlacer.resolvePaletteId(lat, lon, koppen, esa);
+
+                              boolean placedRegionally = false;
+                              if (!RegionalTreePlacer.isVanillaDefault(paletteId)) {
                                  if (!groundState.is(BlockTags.DIRT)) {
                                     level.setBlock(ground, GRASS_BLOCK_STATE, 260);
                                  }
+                                 placedRegionally = RegionalTreePlacer.placeOne(level, position, paletteId, random, this.settings);
+                              }
 
-                                 ConfiguredFeature<?, ?> feature = features.get(random.nextInt(features.size()));
-                                 feature.place(level, this, random, position);
+                              if (!placedRegionally) {
+                                 List<ConfiguredFeature<?, ?>> features = treeFeaturesForBiome(biome);
+                                 if (!features.isEmpty()) {
+                                    if (!groundState.is(BlockTags.DIRT)) {
+                                       level.setBlock(ground, GRASS_BLOCK_STATE, 260);
+                                    }
+                                    ConfiguredFeature<?, ?> feature = features.get(random.nextInt(features.size()));
+                                    feature.place(level, this, random, position);
+                                 }
                               }
                            }
                         }
@@ -3999,19 +4020,37 @@ public final class EarthChunkGenerator extends ChunkGenerator {
          return;
       }
 
-      List<ConfiguredFeature<?, ?>> features = treeFeaturesForBiome(biome);
-      if (features.isEmpty()) {
-         return;
-      }
-
       BlockPos position = ground.above();
       RandomSource random = RandomSource.create(placement.seed());
-      if (!groundState.is(BlockTags.DIRT)) {
-         level.setBlock(ground, GRASS_BLOCK_STATE, 260);
+      double worldScale = this.settings.worldScale();
+      double lat = EarthProjection.blockZToLat((double) worldZ, worldScale);
+      double lon = (double) worldX / EarthProjection.blocksPerDegree(worldScale);
+      String koppen = KOPPEN_SOURCE.sampleDitheredCode((double) worldX, (double) worldZ, worldScale);
+      int esaCode = LAND_COVER_SOURCE.sampleCoverClass((double) worldX, (double) worldZ, worldScale);
+      String esa = esaName(esaCode);
+      String paletteId = (koppen == null)
+          ? TreePaletteRegistry.VANILLA_DEFAULT_ID
+          : RegionalTreePlacer.resolvePaletteId(lat, lon, koppen, esa);
+
+      boolean placedRegionally = false;
+      if (!RegionalTreePlacer.isVanillaDefault(paletteId)) {
+         if (!groundState.is(BlockTags.DIRT)) {
+            level.setBlock(ground, GRASS_BLOCK_STATE, 260);
+         }
+         placedRegionally = RegionalTreePlacer.placeOne(level, position, paletteId, random, this.settings);
       }
 
-      ConfiguredFeature<?, ?> feature = features.get(random.nextInt(features.size()));
-      feature.place(level, this, random, position);
+      if (!placedRegionally) {
+         List<ConfiguredFeature<?, ?>> features = treeFeaturesForBiome(biome);
+         if (features.isEmpty()) {
+            return;
+         }
+         if (!groundState.is(BlockTags.DIRT)) {
+            level.setBlock(ground, GRASS_BLOCK_STATE, 260);
+         }
+         ConfiguredFeature<?, ?> feature = features.get(random.nextInt(features.size()));
+         feature.place(level, this, random, position);
+      }
    }
 
    private boolean isNearWater(int worldX, int worldZ, int radius) {
@@ -8206,6 +8245,23 @@ public final class EarthChunkGenerator extends ChunkGenerator {
             chunk.setAllReferences(updated);
          }
       }
+   }
+
+   private static String esaName(int code) {
+      return switch (code) {
+         case 10 -> "TreeCover";
+         case 20 -> "Shrubland";
+         case 30 -> "Grassland";
+         case 40 -> "Cropland";
+         case 50 -> "BuiltUp";
+         case 60 -> "BareSparseVegetation";
+         case 70 -> "SnowAndIce";
+         case 80 -> "PermanentWaterBodies";
+         case 90 -> "HerbaceousWetland";
+         case 95 -> "Mangroves";
+         case 100 -> "MossAndLichen";
+         default -> "Unknown";
+      };
    }
 
    private static List<ConfiguredFeature<?, ?>> treeFeaturesForBiome(Holder<Biome> biome) {
