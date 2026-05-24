@@ -1089,7 +1089,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                   }
                }
 
-               if (bedrockInChunk) {
+               if (bedrockInChunk && !this.settings.surfaceDepthLimitEnabled()) {
                   if (sectionWriter != null) {
                      sectionWriter.setBlock(localX, localZ, bedrockY, BEDROCK_STATE);
                   } else {
@@ -1121,7 +1121,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                      localX,
                      localZ,
                      surface,
-                     chunkMinY,
+                     columnFloorY,
                      underwater,
                      biome,
                      slopeDiff,
@@ -1138,7 +1138,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                      worldX,
                      worldZ,
                      surface,
-                     chunkMinY,
+                     columnFloorY,
                      underwater,
                      biome,
                      slopeDiff,
