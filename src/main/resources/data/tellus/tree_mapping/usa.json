@@ -1,0 +1,5 @@
+{
+  "country": "usa",
+  "rules": [],
+  "fallback": "tellus:vanilla_default"
+}

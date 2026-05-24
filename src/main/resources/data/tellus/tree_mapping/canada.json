@@ -1,0 +1,9 @@
+{
+  "country": "canada",
+  "rules": [
+    { "koppen": "Dfc", "esa": "TreeCover", "palette": "tellus:canadian_boreal" },
+    { "koppen": "Dfb", "esa": "TreeCover", "palette": "tellus:canadian_mixed_wood" },
+    { "koppen": "Dfc", "esa": "Shrubland", "palette": "tellus:canadian_boreal" }
+  ],
+  "fallback": "tellus:vanilla_default"
+}
