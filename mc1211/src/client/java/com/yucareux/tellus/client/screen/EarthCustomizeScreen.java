@@ -520,7 +520,7 @@ public class EarthCustomizeScreen extends Screen {
          enableRoads,
          enableBuildings,
          enableWater,
-         EarthGeneratorSettings.DEFAULT.treeDensity()
+         this.findSliderValue("trees_density", EarthGeneratorSettings.DEFAULT.treeDensity() * 100.0) / 100.0
       );
    }
 
@@ -819,7 +819,8 @@ public class EarthCustomizeScreen extends Screen {
             List.of(
                toggle("land_vegetation", true).locked(true),
                slider("land_vegetation_density", 100.0, 0.0, 200.0, 5.0).withDisplay(EarthCustomizeScreen::formatPercent).locked(true),
-               slider("trees_density", 100.0, 0.0, 200.0, 5.0).withDisplay(EarthCustomizeScreen::formatPercent).locked(true),
+               slider("trees_density", EarthGeneratorSettings.DEFAULT.treeDensity() * 100.0, 0.0, 200.0, 5.0)
+                  .withDisplay(EarthCustomizeScreen::formatPercent),
                toggle("aquatic_vegetation", true).locked(true),
                toggle("crops_in_villages", true).locked(true)
             )
