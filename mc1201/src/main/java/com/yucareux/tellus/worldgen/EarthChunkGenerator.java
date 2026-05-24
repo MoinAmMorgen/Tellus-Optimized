@@ -1018,10 +1018,13 @@ public final class EarthChunkGenerator extends ChunkGenerator {
       try {
          long solidSectionsStartNs = beginFullChunkProfiling();
          long solidSectionsSubPhaseStartNs = beginFullChunkProfiling();
-         int effectiveMinSurfaceForBulk = this.settings.surfaceDepthLimitEnabled()
-            ? SurfaceDepthLimit.cutoffY(minSurface, this.settings.surfaceDepthLimit()) - 1
-            : minSurface;
-         int solidMaxIndex = resolveSolidSectionMaxIndex(chunk, chunkMinY, effectiveMinSurfaceForBulk, sectionCount);
+         // When the surface depth limit is active, skip the bulk underground fill
+         // entirely. The per-column loop below clamps its own starting Y to the
+         // cutoff, so any section the bulk pass would have filled is below the
+         // cutoff and must be left as air.
+         int solidMaxIndex = this.settings.surfaceDepthLimitEnabled()
+            ? -1
+            : resolveSolidSectionMaxIndex(chunk, chunkMinY, minSurface, sectionCount);
          solidSectionProfiler.maxIndexNs += elapsedFullChunkProfilingSince(solidSectionsSubPhaseStartNs);
          if (solidMaxIndex >= 0) {
             if (sectionWriter != null) {
