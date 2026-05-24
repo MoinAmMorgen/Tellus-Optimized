@@ -25,7 +25,7 @@ class TreeSpeciesDefTest {
 
     @Test
     void defaultsApplyWhenFieldsOmitted() {
-        String json = """{ "nbt": "tellus:tree/x" }""";
+        String json = "{ \"nbt\": \"tellus:tree/x\" }";
         TreeSpeciesDef def = TreeSpeciesDef.fromJson(
             "tellus:x", JsonParser.parseString(json).getAsJsonObject());
 

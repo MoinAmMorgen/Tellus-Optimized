@@ -51,14 +51,14 @@ class CountryTreeMappingTest {
 
     @Test
     void missingFallbackThrows() {
-        String json = """{ "country": "x", "rules": [] }""";
+        String json = "{ \"country\": \"x\", \"rules\": [] }";
         assertThrows(IllegalArgumentException.class, () ->
             CountryTreeMapping.fromJson(JsonParser.parseString(json).getAsJsonObject()));
     }
 
     @Test
     void missingCountryThrows() {
-        String json = """{ "rules": [], "fallback": "tellus:vanilla_default" }""";
+        String json = "{ \"rules\": [], \"fallback\": \"tellus:vanilla_default\" }";
         assertThrows(IllegalArgumentException.class, () ->
             CountryTreeMapping.fromJson(JsonParser.parseString(json).getAsJsonObject()));
     }

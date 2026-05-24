@@ -54,7 +54,7 @@ class TreePaletteDefTest {
 
     @Test
     void missingSpeciesArrayThrows() {
-        String json = """{ "trees_per_chunk": 5 }""";
+        String json = "{ \"trees_per_chunk\": 5 }";
         assertThrows(IllegalArgumentException.class, () ->
             TreePaletteDef.fromJson("tellus:x", JsonParser.parseString(json).getAsJsonObject()));
     }
