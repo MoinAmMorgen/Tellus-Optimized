@@ -521,7 +521,8 @@ public class EarthCustomizeScreen extends Screen {
          demSelection,
          enableRoads,
          enableBuildings,
-         enableWater
+         enableWater,
+         this.findSliderValue("trees_density", EarthGeneratorSettings.DEFAULT.treeDensity() * 100.0) / 100.0
       );
    }
 
@@ -596,6 +597,7 @@ public class EarthCustomizeScreen extends Screen {
       this.setSliderValue("voxy_chunk_pregen_max_radius", initialSettings.voxyChunkPregenMaxRadius());
       this.setSliderValue("voxy_chunk_pregen_chunks_per_tick", initialSettings.voxyChunkPregenChunksPerTick());
       this.setRenderModeValue("distant_horizons_render_mode", initialSettings.distantHorizonsRenderMode());
+      this.setSliderValue("trees_density", initialSettings.treeDensity() * 100.0);
    }
 
    private void setSliderValue(String key, double value) {
@@ -820,7 +822,8 @@ public class EarthCustomizeScreen extends Screen {
             List.of(
                toggle("land_vegetation", true).locked(true),
                slider("land_vegetation_density", 100.0, 0.0, 200.0, 5.0).withDisplay(EarthCustomizeScreen::formatPercent).locked(true),
-               slider("trees_density", 100.0, 0.0, 200.0, 5.0).withDisplay(EarthCustomizeScreen::formatPercent).locked(true),
+               slider("trees_density", EarthGeneratorSettings.DEFAULT.treeDensity() * 100.0, 0.0, 200.0, 5.0)
+                  .withDisplay(EarthCustomizeScreen::formatPercent),
                toggle("aquatic_vegetation", true).locked(true),
                toggle("crops_in_villages", true).locked(true)
             )

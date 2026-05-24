@@ -66,7 +66,8 @@ public record EarthGeneratorSettings(
    EarthGeneratorSettings.DemSelection demSelection,
    boolean enableRoads,
    boolean enableBuildings,
-   boolean enableWater
+   boolean enableWater,
+   double treeDensity
 ) {
    public static final double DEFAULT_SPAWN_LATITUDE = 27.9881;
    public static final double DEFAULT_SPAWN_LONGITUDE = 86.925;
@@ -137,7 +138,8 @@ public record EarthGeneratorSettings(
       EarthGeneratorSettings.DemSelection.automaticSelection(),
       false,
       false,
-      false
+      false,
+      1.0
    );
    private static final MapCodec<EarthGeneratorSettings.BaseToggles> BASE_TOGGLES_CODEC = RecordCodecBuilder.mapCodec(
       instance -> instance.group(
@@ -324,6 +326,9 @@ public record EarthGeneratorSettings(
          .apply(instance, EarthGeneratorSettings::createStructureSettings)
    );
    private static final MapCodec<Boolean> TRAIL_RUINS_CODEC = Codec.BOOL.fieldOf("add_trail_ruins").orElse(DEFAULT.addTrailRuins());
+   private static final MapCodec<Double> TREE_DENSITY_CODEC = Codec.DOUBLE
+      .fieldOf("tree_density")
+      .orElse(DEFAULT.treeDensity());
    private static final MapCodec<EarthGeneratorSettings> MAP_CODEC = MapCodec.of(
       new Implementation<EarthGeneratorSettings>() {
          public <T> RecordBuilder<T> encode(EarthGeneratorSettings input, DynamicOps<T> ops, RecordBuilder<T> prefix) {
@@ -349,7 +354,8 @@ public record EarthGeneratorSettings(
             builder = EarthGeneratorSettings.DEEP_DARK_CODEC.encode(input.deepDark(), ops, builder);
             builder = EarthGeneratorSettings.GEODES_CODEC.encode(input.geodes(), ops, builder);
             builder = EarthGeneratorSettings.STRUCTURE_CODEC.encode(EarthGeneratorSettings.StructureSettings.fromSettings(input), ops, builder);
-            return EarthGeneratorSettings.TRAIL_RUINS_CODEC.encode(input.addTrailRuins(), ops, builder);
+            builder = EarthGeneratorSettings.TRAIL_RUINS_CODEC.encode(input.addTrailRuins(), ops, builder);
+            return EarthGeneratorSettings.TREE_DENSITY_CODEC.encode(input.treeDensity(), ops, builder);
          }
 
          public <T> Stream<T> keys(DynamicOps<T> ops) {
@@ -373,7 +379,8 @@ public record EarthGeneratorSettings(
             baseKeys = Stream.concat(baseKeys, EarthGeneratorSettings.DEEP_DARK_CODEC.keys(ops));
             baseKeys = Stream.concat(baseKeys, EarthGeneratorSettings.GEODES_CODEC.keys(ops));
             Stream<T> structureKeys = Stream.concat(baseKeys, EarthGeneratorSettings.STRUCTURE_CODEC.keys(ops));
-            return Stream.concat(structureKeys, EarthGeneratorSettings.TRAIL_RUINS_CODEC.keys(ops));
+            structureKeys = Stream.concat(structureKeys, EarthGeneratorSettings.TRAIL_RUINS_CODEC.keys(ops));
+            return Stream.concat(structureKeys, EarthGeneratorSettings.TREE_DENSITY_CODEC.keys(ops));
          }
       },
       new com.mojang.serialization.MapDecoder.Implementation<EarthGeneratorSettings>() {
@@ -401,6 +408,7 @@ public record EarthGeneratorSettings(
             DataResult<Boolean> geodes = EarthGeneratorSettings.GEODES_CODEC.decode(ops, input);
             DataResult<EarthGeneratorSettings.StructureSettings> structures = EarthGeneratorSettings.STRUCTURE_CODEC.decode(ops, input);
             DataResult<Boolean> trailRuins = EarthGeneratorSettings.TRAIL_RUINS_CODEC.decode(ops, input);
+            DataResult<Double> treeDensity = EarthGeneratorSettings.TREE_DENSITY_CODEC.decode(ops, input);
             DataResult<EarthGeneratorSettings.SettingsBase> withSeaLevel = base.apply2(EarthGeneratorSettings::applySeaLevel, seaLevel);
             DataResult<EarthGeneratorSettings.SettingsBase> withRenderMode = withSeaLevel.apply2(
                EarthGeneratorSettings::applyDistantHorizonsRenderMode, distantHorizonsRenderMode
@@ -438,7 +446,8 @@ public record EarthGeneratorSettings(
             settings = settings.apply2(EarthGeneratorSettings::applyDeepDark, deepDark);
             settings = settings.apply2(EarthGeneratorSettings::applyGeodes, geodes);
             settings = settings.apply2(EarthGeneratorSettings::withStructureSettings, structures);
-            return settings.apply2(EarthGeneratorSettings::applyTrailRuins, trailRuins);
+            settings = settings.apply2(EarthGeneratorSettings::applyTrailRuins, trailRuins);
+            return settings.apply2(EarthGeneratorSettings::applyTreeDensity, treeDensity);
          }
 
          public <T> Stream<T> keys(DynamicOps<T> ops) {
@@ -462,7 +471,8 @@ public record EarthGeneratorSettings(
             baseKeys = Stream.concat(baseKeys, EarthGeneratorSettings.DEEP_DARK_CODEC.keys(ops));
             baseKeys = Stream.concat(baseKeys, EarthGeneratorSettings.GEODES_CODEC.keys(ops));
             Stream<T> structureKeys = Stream.concat(baseKeys, EarthGeneratorSettings.STRUCTURE_CODEC.keys(ops));
-            return Stream.concat(structureKeys, EarthGeneratorSettings.TRAIL_RUINS_CODEC.keys(ops));
+            structureKeys = Stream.concat(structureKeys, EarthGeneratorSettings.TRAIL_RUINS_CODEC.keys(ops));
+            return Stream.concat(structureKeys, EarthGeneratorSettings.TREE_DENSITY_CODEC.keys(ops));
          }
       }
    );
@@ -518,7 +528,8 @@ public record EarthGeneratorSettings(
       EarthGeneratorSettings.DemSelection demSelection,
       boolean enableRoads,
       boolean enableBuildings,
-      boolean enableWater
+      boolean enableWater,
+      double treeDensity
    ) {
       worldScale = clampWorldScale(worldScale);
       voxyChunkPregenMaxRadius = Mth.clamp(voxyChunkPregenMaxRadius, 0, MAX_VOXY_PREGEN_RADIUS);
@@ -577,6 +588,7 @@ public record EarthGeneratorSettings(
       this.enableRoads = enableRoads;
       this.enableBuildings = enableBuildings;
       this.enableWater = enableWater;
+      this.treeDensity = treeDensity;
    }
 
    public boolean isSeaLevelAutomatic() {
@@ -824,12 +836,45 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          this.enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
    private static EarthGeneratorSettings applyTrailRuins(EarthGeneratorSettings settings, Boolean addTrailRuins) {
       return settings.withTrailRuins(Objects.requireNonNull(addTrailRuins, "addTrailRuins"));
+   }
+
+   private static EarthGeneratorSettings applyTreeDensity(EarthGeneratorSettings settings, Double treeDensity) {
+      return settings.withTreeDensity(Objects.requireNonNull(treeDensity, "treeDensity"));
+   }
+
+   public EarthGeneratorSettings withTreeDensity(double treeDensity) {
+      return new EarthGeneratorSettings(
+         this.worldScale, this.terrestrialHeightScale, this.oceanicHeightScale,
+         this.heightOffset, this.seaLevel, this.spawnLatitude, this.spawnLongitude,
+         this.minAltitude, this.maxAltitude, this.riverLakeShorelineBlend,
+         this.oceanShorelineBlend, this.shorelineBlendCliffLimit,
+         this.caveGeneration, this.oreDistribution, this.lavaPools,
+         this.addStrongholds, this.addVillages, this.addMineshafts,
+         this.addOceanMonuments, this.addWoodlandMansions, this.addDesertTemples,
+         this.addJungleTemples, this.addPillagerOutposts, this.addRuinedPortals,
+         this.addShipwrecks, this.addOceanRuins, this.addBuriedTreasure,
+         this.addIgloos, this.addWitchHuts, this.addAncientCities,
+         this.addTrialChambers, this.addTrailRuins, this.deepDark, this.geodes,
+         this.distantHorizonsWaterResolver, this.distantHorizonsOsmFeatures,
+         this.distantHorizonsOsmRoadMaxDetail, this.distantHorizonsOsmBuildingMaxDetail,
+         this.distantHorizonsOsmNonBlockingFetch, this.realtimeTime,
+         this.realtimeWeather, this.historicalSnow, this.voxyChunkPregenEnabled,
+         this.voxyChunkPregenMaxRadius, this.voxyChunkPregenChunksPerTick,
+         this.distantHorizonsRenderMode, this.demSelection,
+         this.enableRoads, this.enableBuildings, this.enableWater,
+         treeDensity
+      );
+   }
+
+   public double effectiveTreeDensity() {
+      return net.minecraft.util.Mth.clamp(this.treeDensity, 0.0, 5.0);
    }
 
    private static EarthGeneratorSettings applyDeepDark(EarthGeneratorSettings settings, Boolean deepDark) {
@@ -891,7 +936,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          this.enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
@@ -946,7 +992,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          this.enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
@@ -1001,7 +1048,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          this.enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
@@ -1056,7 +1104,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          this.enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
@@ -1111,7 +1160,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          this.enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
@@ -1166,7 +1216,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          this.enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
@@ -1221,7 +1272,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          enableRoads,
          this.enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
@@ -1276,7 +1328,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          enableBuildings,
-         this.enableWater
+         this.enableWater,
+         this.treeDensity
       );
    }
 
@@ -1331,7 +1384,8 @@ public record EarthGeneratorSettings(
          this.demSelection,
          this.enableRoads,
          this.enableBuildings,
-         enableWater
+         enableWater,
+         this.treeDensity
       );
    }
 
@@ -2130,7 +2184,8 @@ public record EarthGeneratorSettings(
             this.demSelection,
             EarthGeneratorSettings.DEFAULT.enableRoads(),
             EarthGeneratorSettings.DEFAULT.enableBuildings(),
-            EarthGeneratorSettings.DEFAULT.enableWater()
+            EarthGeneratorSettings.DEFAULT.enableWater(),
+            EarthGeneratorSettings.DEFAULT.treeDensity()
          );
       }
    }
