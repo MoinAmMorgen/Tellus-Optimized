@@ -10,6 +10,23 @@ subprojects {
 	version = rootProject.version
 }
 
+// Distribute author-supplied tree NBT files into each Fabric subproject's resources.
+// Drop files at:   <repo>/tree-nbts/<country>/<name>.nbt
+// They get packed at: data/tellus/<structures|structure>/tree/<country>/<name>.nbt
+// Folder name flips to singular for 1.21.2+ (mc261); 1.20.1 and 1.21.1 stay plural.
+subprojects { sub ->
+	afterEvaluate {
+		if (sub.tasks.findByName('processResources') == null) return
+		def structureFolder = sub.name == 'mc261' ? 'structure' : 'structures'
+		sub.tasks.named('processResources') {
+			from(rootProject.file('tree-nbts')) {
+				into "data/tellus/${structureFolder}/tree"
+				include '**/*.nbt'
+			}
+		}
+	}
+}
+
 tasks.named('clean') {
 	dependsOn(':mc1201:clean', ':mc1211:clean', ':mc261:clean')
 }
