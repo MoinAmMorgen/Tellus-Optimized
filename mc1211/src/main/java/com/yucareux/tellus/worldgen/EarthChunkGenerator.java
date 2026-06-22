@@ -592,7 +592,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
       }
 
       long totalStartNs = beginFullChunkProfiling();
-      if (!SharedConstants.DEBUG_DISABLE_CARVERS && this.settings.caveGeneration()) {
+      if (!SharedConstants.DEBUG_DISABLE_CARVERS && this.settings.effectiveCaveGeneration()) {
          long phaseStartNs = beginFullChunkProfiling();
          boolean[] waterFlags = new boolean[CHUNK_AREA];
          WaterSurfaceResolver.WaterChunkData waterData = this.resolveChunkWaterData(chunk.getPos());
@@ -663,7 +663,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
          phaseStartNs = beginFullChunkProfiling();
          super.applyBiomeDecoration(level, chunk, structures);
          endFullChunkProfiling(EarthChunkGenerator.FullChunkPhase.DECORATION_SUPER, phaseStartNs);
-         if (this.settings.caveGeneration()) {
+         if (this.settings.effectiveCaveGeneration()) {
             phaseStartNs = beginFullChunkProfiling();
             this.spawnAxolotlsInLushPonds(level, chunk);
             endFullChunkProfiling(EarthChunkGenerator.FullChunkPhase.DECORATION_AXOLOTLS, phaseStartNs);
@@ -1020,7 +1020,13 @@ public final class EarthChunkGenerator extends ChunkGenerator {
       try {
          long solidSectionsStartNs = beginFullChunkProfiling();
          long solidSectionsSubPhaseStartNs = beginFullChunkProfiling();
-         int solidMaxIndex = resolveSolidSectionMaxIndex(chunk, chunkMinY, minSurface, sectionCount);
+         // When the surface depth limit is active, skip the bulk underground fill
+         // entirely. The per-column loop below clamps its own starting Y to the
+         // cutoff, so any section the bulk pass would have filled is below the
+         // cutoff and must be left as air.
+         int solidMaxIndex = this.settings.surfaceDepthLimitEnabled()
+            ? -1
+            : resolveSolidSectionMaxIndex(chunk, chunkMinY, minSurface, sectionCount);
          solidSectionProfiler.maxIndexNs += elapsedFullChunkProfilingSince(solidSectionsSubPhaseStartNs);
          if (solidMaxIndex >= 0) {
             if (sectionWriter != null) {
@@ -1042,7 +1048,10 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                int waterSurface = waterSurfaces[index];
                boolean hasWater = waterFlags[index];
                Holder<Biome> biome = biomeCache[index];
-               int y = chunkMinY;
+               int columnFloorY = this.settings.surfaceDepthLimitEnabled()
+                  ? Math.max(chunkMinY, SurfaceDepthLimit.cutoffY(surface, this.settings.surfaceDepthLimit()))
+                  : chunkMinY;
+               int y = columnFloorY;
                long subPhaseStartNs = beginFullChunkProfiling();
                int surfaceCoverClass = surfaceCoverClasses[index];
                boolean underwater = hasWater && waterSurface > surface;
@@ -1054,9 +1063,9 @@ public final class EarthChunkGenerator extends ChunkGenerator {
 
                if (mountainMassFill != null) {
                   if (sectionWriter != null) {
-                     sectionWriter.fillColumnConstant(localX, localZ, chunkMinY, surface, mountainMassFill);
+                     sectionWriter.fillColumnConstant(localX, localZ, columnFloorY, surface, mountainMassFill);
                   } else {
-                     fillColumnConstant(sections, columnFilledSections, chunkMinY, localX, localZ, chunkMinY, surface, mountainMassFill);
+                     fillColumnConstant(sections, columnFilledSections, chunkMinY, localX, localZ, columnFloorY, surface, mountainMassFill);
                   }
                } else {
                   while (y <= surface) {
@@ -1086,7 +1095,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                   }
                }
 
-               if (bedrockInChunk) {
+               if (bedrockInChunk && !this.settings.surfaceDepthLimitEnabled()) {
                   if (sectionWriter != null) {
                      sectionWriter.setBlock(localX, localZ, bedrockY, BEDROCK_STATE);
                   } else {
@@ -1118,7 +1127,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                      localX,
                      localZ,
                      surface,
-                     chunkMinY,
+                     columnFloorY,
                      underwater,
                      biome,
                      slopeDiff,
@@ -1135,7 +1144,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                      worldX,
                      worldZ,
                      surface,
-                     chunkMinY,
+                     columnFloorY,
                      underwater,
                      biome,
                      slopeDiff,
@@ -8112,15 +8121,15 @@ public final class EarthChunkGenerator extends ChunkGenerator {
 
    private static int geologyFlags(EarthGeneratorSettings settings, boolean keepTrees) {
       int flags = 0;
-      if (settings.caveGeneration()) {
+      if (settings.effectiveCaveGeneration()) {
          flags |= 1;
       }
 
-      if (settings.oreDistribution()) {
+      if (settings.effectiveOreDistribution()) {
          flags |= 2;
       }
 
-      if (settings.lavaPools()) {
+      if (settings.effectiveLavaPools()) {
          flags |= 4;
       }
 
@@ -8144,7 +8153,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
    }
 
    private static boolean shouldKeepCarverId(String path, EarthGeneratorSettings settings) {
-      return settings.caveGeneration() || !path.equals("cave") && !path.equals("cave_extra_underground") && !path.equals("canyon");
+      return settings.effectiveCaveGeneration() || !path.equals("cave") && !path.equals("cave_extra_underground") && !path.equals("canyon");
    }
 
    private static boolean shouldKeepFeature(Holder<PlacedFeature> feature, EarthGeneratorSettings settings) {
@@ -8154,13 +8163,13 @@ public final class EarthChunkGenerator extends ChunkGenerator {
    private static boolean shouldKeepFeatureId(String path, EarthGeneratorSettings settings) {
       if (path.equals("freeze_top_layer") || path.equals("snow_and_freeze")) {
          return false;
-      } else if (!settings.oreDistribution() && path.startsWith("ore_")) {
+      } else if (!settings.effectiveOreDistribution() && path.startsWith("ore_")) {
          return false;
       } else if (!settings.geodes() && path.contains("geode")) {
          return false;
       } else if (settings.deepDark() || !path.contains("sculk") && !path.contains("deep_dark")) {
-         return settings.caveGeneration() || !path.contains("dripstone") && !path.startsWith("spring_water")
-            ? settings.lavaPools() || !path.startsWith("lake_lava") && !path.startsWith("spring_lava")
+         return settings.effectiveCaveGeneration() || !path.contains("dripstone") && !path.startsWith("spring_water")
+            ? settings.effectiveLavaPools() || !path.startsWith("lake_lava") && !path.startsWith("spring_lava")
             : false;
       } else {
          return false;

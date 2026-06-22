@@ -67,7 +67,9 @@ public record EarthGeneratorSettings(
    boolean enableRoads,
    boolean enableBuildings,
    boolean enableWater,
-   double treeDensity
+   double treeDensity,
+   boolean surfaceDepthLimitEnabled,
+   int surfaceDepthLimit
 ) {
    public static final double DEFAULT_SPAWN_LATITUDE = 27.9881;
    public static final double DEFAULT_SPAWN_LONGITUDE = 86.925;
@@ -139,7 +141,9 @@ public record EarthGeneratorSettings(
       false,
       false,
       false,
-      1.0
+      1.0,
+      false,
+      SurfaceDepthLimit.DEFAULT_DEPTH
    );
    private static final MapCodec<EarthGeneratorSettings.BaseToggles> BASE_TOGGLES_CODEC = RecordCodecBuilder.mapCodec(
       instance -> instance.group(
@@ -292,6 +296,12 @@ public record EarthGeneratorSettings(
       .orElse(DEFAULT.voxyChunkPregenChunksPerTick());
    private static final MapCodec<Boolean> DEEP_DARK_CODEC = Codec.BOOL.fieldOf("deep_dark").orElse(DEFAULT.deepDark());
    private static final MapCodec<Boolean> GEODES_CODEC = Codec.BOOL.fieldOf("geodes").orElse(DEFAULT.geodes());
+   private static final MapCodec<Boolean> SURFACE_DEPTH_LIMIT_ENABLED_CODEC = Codec.BOOL
+      .fieldOf("surface_depth_limit_enabled")
+      .orElse(DEFAULT.surfaceDepthLimitEnabled());
+   private static final MapCodec<Integer> SURFACE_DEPTH_LIMIT_CODEC = Codec.intRange(SurfaceDepthLimit.MIN_DEPTH, SurfaceDepthLimit.MAX_DEPTH)
+      .fieldOf("surface_depth_limit")
+      .orElse(DEFAULT.surfaceDepthLimit());
    private static final MapCodec<EarthGeneratorSettings.StructureSettings> STRUCTURE_CODEC = RecordCodecBuilder.mapCodec(
       instance -> instance.group(
             Codec.BOOL.fieldOf("add_strongholds").orElse(DEFAULT.addStrongholds()).forGetter(EarthGeneratorSettings.StructureSettings::addStrongholds),
@@ -355,7 +365,9 @@ public record EarthGeneratorSettings(
             builder = EarthGeneratorSettings.GEODES_CODEC.encode(input.geodes(), ops, builder);
             builder = EarthGeneratorSettings.STRUCTURE_CODEC.encode(EarthGeneratorSettings.StructureSettings.fromSettings(input), ops, builder);
             builder = EarthGeneratorSettings.TRAIL_RUINS_CODEC.encode(input.addTrailRuins(), ops, builder);
-            return EarthGeneratorSettings.TREE_DENSITY_CODEC.encode(input.treeDensity(), ops, builder);
+            builder = EarthGeneratorSettings.TREE_DENSITY_CODEC.encode(input.treeDensity(), ops, builder);
+            builder = EarthGeneratorSettings.SURFACE_DEPTH_LIMIT_ENABLED_CODEC.encode(input.surfaceDepthLimitEnabled(), ops, builder);
+            return EarthGeneratorSettings.SURFACE_DEPTH_LIMIT_CODEC.encode(input.surfaceDepthLimit(), ops, builder);
          }
 
          public <T> Stream<T> keys(DynamicOps<T> ops) {
@@ -380,7 +392,9 @@ public record EarthGeneratorSettings(
             baseKeys = Stream.concat(baseKeys, EarthGeneratorSettings.GEODES_CODEC.keys(ops));
             Stream<T> structureKeys = Stream.concat(baseKeys, EarthGeneratorSettings.STRUCTURE_CODEC.keys(ops));
             structureKeys = Stream.concat(structureKeys, EarthGeneratorSettings.TRAIL_RUINS_CODEC.keys(ops));
-            return Stream.concat(structureKeys, EarthGeneratorSettings.TREE_DENSITY_CODEC.keys(ops));
+            structureKeys = Stream.concat(structureKeys, EarthGeneratorSettings.TREE_DENSITY_CODEC.keys(ops));
+            structureKeys = Stream.concat(structureKeys, EarthGeneratorSettings.SURFACE_DEPTH_LIMIT_ENABLED_CODEC.keys(ops));
+            return Stream.concat(structureKeys, EarthGeneratorSettings.SURFACE_DEPTH_LIMIT_CODEC.keys(ops));
          }
       },
       new com.mojang.serialization.MapDecoder.Implementation<EarthGeneratorSettings>() {
@@ -409,6 +423,8 @@ public record EarthGeneratorSettings(
             DataResult<EarthGeneratorSettings.StructureSettings> structures = EarthGeneratorSettings.STRUCTURE_CODEC.decode(ops, input);
             DataResult<Boolean> trailRuins = EarthGeneratorSettings.TRAIL_RUINS_CODEC.decode(ops, input);
             DataResult<Double> treeDensity = EarthGeneratorSettings.TREE_DENSITY_CODEC.decode(ops, input);
+            DataResult<Boolean> surfaceDepthLimitEnabled = EarthGeneratorSettings.SURFACE_DEPTH_LIMIT_ENABLED_CODEC.decode(ops, input);
+            DataResult<Integer> surfaceDepthLimit = EarthGeneratorSettings.SURFACE_DEPTH_LIMIT_CODEC.decode(ops, input);
             DataResult<EarthGeneratorSettings.SettingsBase> withSeaLevel = base.apply2(EarthGeneratorSettings::applySeaLevel, seaLevel);
             DataResult<EarthGeneratorSettings.SettingsBase> withRenderMode = withSeaLevel.apply2(
                EarthGeneratorSettings::applyDistantHorizonsRenderMode, distantHorizonsRenderMode
@@ -447,7 +463,9 @@ public record EarthGeneratorSettings(
             settings = settings.apply2(EarthGeneratorSettings::applyGeodes, geodes);
             settings = settings.apply2(EarthGeneratorSettings::withStructureSettings, structures);
             settings = settings.apply2(EarthGeneratorSettings::applyTrailRuins, trailRuins);
-            return settings.apply2(EarthGeneratorSettings::applyTreeDensity, treeDensity);
+            settings = settings.apply2(EarthGeneratorSettings::applyTreeDensity, treeDensity);
+            settings = settings.apply2(EarthGeneratorSettings::applySurfaceDepthLimitEnabled, surfaceDepthLimitEnabled);
+            return settings.apply2(EarthGeneratorSettings::applySurfaceDepthLimit, surfaceDepthLimit);
          }
 
          public <T> Stream<T> keys(DynamicOps<T> ops) {
@@ -472,7 +490,9 @@ public record EarthGeneratorSettings(
             baseKeys = Stream.concat(baseKeys, EarthGeneratorSettings.GEODES_CODEC.keys(ops));
             Stream<T> structureKeys = Stream.concat(baseKeys, EarthGeneratorSettings.STRUCTURE_CODEC.keys(ops));
             structureKeys = Stream.concat(structureKeys, EarthGeneratorSettings.TRAIL_RUINS_CODEC.keys(ops));
-            return Stream.concat(structureKeys, EarthGeneratorSettings.TREE_DENSITY_CODEC.keys(ops));
+            structureKeys = Stream.concat(structureKeys, EarthGeneratorSettings.TREE_DENSITY_CODEC.keys(ops));
+            structureKeys = Stream.concat(structureKeys, EarthGeneratorSettings.SURFACE_DEPTH_LIMIT_ENABLED_CODEC.keys(ops));
+            return Stream.concat(structureKeys, EarthGeneratorSettings.SURFACE_DEPTH_LIMIT_CODEC.keys(ops));
          }
       }
    );
@@ -529,7 +549,9 @@ public record EarthGeneratorSettings(
       boolean enableRoads,
       boolean enableBuildings,
       boolean enableWater,
-      double treeDensity
+      double treeDensity,
+      boolean surfaceDepthLimitEnabled,
+      int surfaceDepthLimit
    ) {
       worldScale = clampWorldScale(worldScale);
       voxyChunkPregenMaxRadius = Mth.clamp(voxyChunkPregenMaxRadius, 0, MAX_VOXY_PREGEN_RADIUS);
@@ -589,6 +611,8 @@ public record EarthGeneratorSettings(
       this.enableBuildings = enableBuildings;
       this.enableWater = enableWater;
       this.treeDensity = treeDensity;
+      this.surfaceDepthLimitEnabled = surfaceDepthLimitEnabled;
+      this.surfaceDepthLimit = SurfaceDepthLimit.clampDepth(surfaceDepthLimit);
    }
 
    public boolean isSeaLevelAutomatic() {
@@ -837,7 +861,9 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          this.enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -869,12 +895,22 @@ public record EarthGeneratorSettings(
          this.voxyChunkPregenMaxRadius, this.voxyChunkPregenChunksPerTick,
          this.distantHorizonsRenderMode, this.demSelection,
          this.enableRoads, this.enableBuildings, this.enableWater,
-         treeDensity
+         treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
    public double effectiveTreeDensity() {
       return net.minecraft.util.Mth.clamp(this.treeDensity, 0.0, 5.0);
+   }
+
+   private static EarthGeneratorSettings applySurfaceDepthLimitEnabled(EarthGeneratorSettings settings, Boolean enabled) {
+      return settings.withSurfaceDepthLimitEnabled(Objects.requireNonNull(enabled, "surfaceDepthLimitEnabled"));
+   }
+
+   private static EarthGeneratorSettings applySurfaceDepthLimit(EarthGeneratorSettings settings, Integer depth) {
+      return settings.withSurfaceDepthLimit(Objects.requireNonNull(depth, "surfaceDepthLimit"));
    }
 
    private static EarthGeneratorSettings applyDeepDark(EarthGeneratorSettings settings, Boolean deepDark) {
@@ -937,7 +973,9 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          this.enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -993,7 +1031,9 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          this.enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -1049,7 +1089,9 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          this.enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -1105,7 +1147,9 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          this.enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -1161,7 +1205,9 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          this.enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -1217,7 +1263,9 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          this.enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -1273,7 +1321,9 @@ public record EarthGeneratorSettings(
          enableRoads,
          this.enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -1329,7 +1379,9 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          enableBuildings,
          this.enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
    }
 
@@ -1385,8 +1437,148 @@ public record EarthGeneratorSettings(
          this.enableRoads,
          this.enableBuildings,
          enableWater,
-         this.treeDensity
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled,
+         this.surfaceDepthLimit
       );
+   }
+
+   public EarthGeneratorSettings withCaveGeneration(boolean caveGeneration) {
+      return new EarthGeneratorSettings(
+         this.worldScale, this.terrestrialHeightScale, this.oceanicHeightScale,
+         this.heightOffset, this.seaLevel, this.spawnLatitude, this.spawnLongitude,
+         this.minAltitude, this.maxAltitude, this.riverLakeShorelineBlend,
+         this.oceanShorelineBlend, this.shorelineBlendCliffLimit,
+         caveGeneration, this.oreDistribution, this.lavaPools,
+         this.addStrongholds, this.addVillages, this.addMineshafts,
+         this.addOceanMonuments, this.addWoodlandMansions, this.addDesertTemples,
+         this.addJungleTemples, this.addPillagerOutposts, this.addRuinedPortals,
+         this.addShipwrecks, this.addOceanRuins, this.addBuriedTreasure,
+         this.addIgloos, this.addWitchHuts, this.addAncientCities,
+         this.addTrialChambers, this.addTrailRuins, this.deepDark, this.geodes,
+         this.distantHorizonsWaterResolver, this.distantHorizonsOsmFeatures,
+         this.distantHorizonsOsmRoadMaxDetail, this.distantHorizonsOsmBuildingMaxDetail,
+         this.distantHorizonsOsmNonBlockingFetch, this.realtimeTime,
+         this.realtimeWeather, this.historicalSnow, this.voxyChunkPregenEnabled,
+         this.voxyChunkPregenMaxRadius, this.voxyChunkPregenChunksPerTick,
+         this.distantHorizonsRenderMode, this.demSelection,
+         this.enableRoads, this.enableBuildings, this.enableWater,
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled, this.surfaceDepthLimit
+      );
+   }
+
+   public EarthGeneratorSettings withOreDistribution(boolean oreDistribution) {
+      return new EarthGeneratorSettings(
+         this.worldScale, this.terrestrialHeightScale, this.oceanicHeightScale,
+         this.heightOffset, this.seaLevel, this.spawnLatitude, this.spawnLongitude,
+         this.minAltitude, this.maxAltitude, this.riverLakeShorelineBlend,
+         this.oceanShorelineBlend, this.shorelineBlendCliffLimit,
+         this.caveGeneration, oreDistribution, this.lavaPools,
+         this.addStrongholds, this.addVillages, this.addMineshafts,
+         this.addOceanMonuments, this.addWoodlandMansions, this.addDesertTemples,
+         this.addJungleTemples, this.addPillagerOutposts, this.addRuinedPortals,
+         this.addShipwrecks, this.addOceanRuins, this.addBuriedTreasure,
+         this.addIgloos, this.addWitchHuts, this.addAncientCities,
+         this.addTrialChambers, this.addTrailRuins, this.deepDark, this.geodes,
+         this.distantHorizonsWaterResolver, this.distantHorizonsOsmFeatures,
+         this.distantHorizonsOsmRoadMaxDetail, this.distantHorizonsOsmBuildingMaxDetail,
+         this.distantHorizonsOsmNonBlockingFetch, this.realtimeTime,
+         this.realtimeWeather, this.historicalSnow, this.voxyChunkPregenEnabled,
+         this.voxyChunkPregenMaxRadius, this.voxyChunkPregenChunksPerTick,
+         this.distantHorizonsRenderMode, this.demSelection,
+         this.enableRoads, this.enableBuildings, this.enableWater,
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled, this.surfaceDepthLimit
+      );
+   }
+
+   public EarthGeneratorSettings withLavaPools(boolean lavaPools) {
+      return new EarthGeneratorSettings(
+         this.worldScale, this.terrestrialHeightScale, this.oceanicHeightScale,
+         this.heightOffset, this.seaLevel, this.spawnLatitude, this.spawnLongitude,
+         this.minAltitude, this.maxAltitude, this.riverLakeShorelineBlend,
+         this.oceanShorelineBlend, this.shorelineBlendCliffLimit,
+         this.caveGeneration, this.oreDistribution, lavaPools,
+         this.addStrongholds, this.addVillages, this.addMineshafts,
+         this.addOceanMonuments, this.addWoodlandMansions, this.addDesertTemples,
+         this.addJungleTemples, this.addPillagerOutposts, this.addRuinedPortals,
+         this.addShipwrecks, this.addOceanRuins, this.addBuriedTreasure,
+         this.addIgloos, this.addWitchHuts, this.addAncientCities,
+         this.addTrialChambers, this.addTrailRuins, this.deepDark, this.geodes,
+         this.distantHorizonsWaterResolver, this.distantHorizonsOsmFeatures,
+         this.distantHorizonsOsmRoadMaxDetail, this.distantHorizonsOsmBuildingMaxDetail,
+         this.distantHorizonsOsmNonBlockingFetch, this.realtimeTime,
+         this.realtimeWeather, this.historicalSnow, this.voxyChunkPregenEnabled,
+         this.voxyChunkPregenMaxRadius, this.voxyChunkPregenChunksPerTick,
+         this.distantHorizonsRenderMode, this.demSelection,
+         this.enableRoads, this.enableBuildings, this.enableWater,
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled, this.surfaceDepthLimit
+      );
+   }
+
+   public EarthGeneratorSettings withSurfaceDepthLimitEnabled(boolean surfaceDepthLimitEnabled) {
+      return new EarthGeneratorSettings(
+         this.worldScale, this.terrestrialHeightScale, this.oceanicHeightScale,
+         this.heightOffset, this.seaLevel, this.spawnLatitude, this.spawnLongitude,
+         this.minAltitude, this.maxAltitude, this.riverLakeShorelineBlend,
+         this.oceanShorelineBlend, this.shorelineBlendCliffLimit,
+         this.caveGeneration, this.oreDistribution, this.lavaPools,
+         this.addStrongholds, this.addVillages, this.addMineshafts,
+         this.addOceanMonuments, this.addWoodlandMansions, this.addDesertTemples,
+         this.addJungleTemples, this.addPillagerOutposts, this.addRuinedPortals,
+         this.addShipwrecks, this.addOceanRuins, this.addBuriedTreasure,
+         this.addIgloos, this.addWitchHuts, this.addAncientCities,
+         this.addTrialChambers, this.addTrailRuins, this.deepDark, this.geodes,
+         this.distantHorizonsWaterResolver, this.distantHorizonsOsmFeatures,
+         this.distantHorizonsOsmRoadMaxDetail, this.distantHorizonsOsmBuildingMaxDetail,
+         this.distantHorizonsOsmNonBlockingFetch, this.realtimeTime,
+         this.realtimeWeather, this.historicalSnow, this.voxyChunkPregenEnabled,
+         this.voxyChunkPregenMaxRadius, this.voxyChunkPregenChunksPerTick,
+         this.distantHorizonsRenderMode, this.demSelection,
+         this.enableRoads, this.enableBuildings, this.enableWater,
+         this.treeDensity,
+         surfaceDepthLimitEnabled, this.surfaceDepthLimit
+      );
+   }
+
+   public EarthGeneratorSettings withSurfaceDepthLimit(int surfaceDepthLimit) {
+      return new EarthGeneratorSettings(
+         this.worldScale, this.terrestrialHeightScale, this.oceanicHeightScale,
+         this.heightOffset, this.seaLevel, this.spawnLatitude, this.spawnLongitude,
+         this.minAltitude, this.maxAltitude, this.riverLakeShorelineBlend,
+         this.oceanShorelineBlend, this.shorelineBlendCliffLimit,
+         this.caveGeneration, this.oreDistribution, this.lavaPools,
+         this.addStrongholds, this.addVillages, this.addMineshafts,
+         this.addOceanMonuments, this.addWoodlandMansions, this.addDesertTemples,
+         this.addJungleTemples, this.addPillagerOutposts, this.addRuinedPortals,
+         this.addShipwrecks, this.addOceanRuins, this.addBuriedTreasure,
+         this.addIgloos, this.addWitchHuts, this.addAncientCities,
+         this.addTrialChambers, this.addTrailRuins, this.deepDark, this.geodes,
+         this.distantHorizonsWaterResolver, this.distantHorizonsOsmFeatures,
+         this.distantHorizonsOsmRoadMaxDetail, this.distantHorizonsOsmBuildingMaxDetail,
+         this.distantHorizonsOsmNonBlockingFetch, this.realtimeTime,
+         this.realtimeWeather, this.historicalSnow, this.voxyChunkPregenEnabled,
+         this.voxyChunkPregenMaxRadius, this.voxyChunkPregenChunksPerTick,
+         this.distantHorizonsRenderMode, this.demSelection,
+         this.enableRoads, this.enableBuildings, this.enableWater,
+         this.treeDensity,
+         this.surfaceDepthLimitEnabled, surfaceDepthLimit
+      );
+   }
+
+   /** Cave generation effective at runtime — suppressed while the surface depth limit is on. */
+   public boolean effectiveCaveGeneration() {
+      return this.caveGeneration && !this.surfaceDepthLimitEnabled;
+   }
+
+   public boolean effectiveOreDistribution() {
+      return this.oreDistribution && !this.surfaceDepthLimitEnabled;
+   }
+
+   public boolean effectiveLavaPools() {
+      return this.lavaPools && !this.surfaceDepthLimitEnabled;
    }
 
    public static EarthGeneratorSettings.HeightLimits resolveHeightLimits(EarthGeneratorSettings settings) {
@@ -2185,7 +2377,9 @@ public record EarthGeneratorSettings(
             EarthGeneratorSettings.DEFAULT.enableRoads(),
             EarthGeneratorSettings.DEFAULT.enableBuildings(),
             EarthGeneratorSettings.DEFAULT.enableWater(),
-            EarthGeneratorSettings.DEFAULT.treeDensity()
+            EarthGeneratorSettings.DEFAULT.treeDensity(),
+            EarthGeneratorSettings.DEFAULT.surfaceDepthLimitEnabled(),
+            EarthGeneratorSettings.DEFAULT.surfaceDepthLimit()
          );
       }
    }
