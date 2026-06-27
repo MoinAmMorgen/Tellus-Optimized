@@ -3888,8 +3888,9 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                               double lat = EarthProjection.blockZToLat((double) worldZ, worldScale);
                               double lon = (double) worldX / EarthProjection.blocksPerDegree(worldScale);
                               String koppen = KOPPEN_SOURCE.sampleDitheredCode((double) worldX, (double) worldZ, worldScale);
-                              int esaCode = LAND_COVER_SOURCE.sampleCoverClass((double) worldX, (double) worldZ, worldScale);
-                              String esa = esaName(esaCode);
+                              // Cell is coverClass == 10 (TreeCover) by the gate above; reuse it
+                              // instead of re-sampling land cover, which can block on a tile download.
+                              String esa = esaName(coverClass);
                               String paletteId = (koppen == null)
                                   ? TreePaletteRegistry.VANILLA_DEFAULT_ID
                                   : RegionalTreePlacer.resolvePaletteId(lat, lon, koppen, esa);
@@ -3984,7 +3985,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
                continue;
             }
 
-            placements.add(new EarthChunkGenerator.PreparedTreePlacement(worldX, worldZ, expectedSurface, biome, seed));
+            placements.add(new EarthChunkGenerator.PreparedTreePlacement(worldX, worldZ, expectedSurface, biome, seed, coverClass));
          }
       }
 
@@ -4029,8 +4030,9 @@ public final class EarthChunkGenerator extends ChunkGenerator {
       double lat = EarthProjection.blockZToLat((double) worldZ, worldScale);
       double lon = (double) worldX / EarthProjection.blocksPerDegree(worldScale);
       String koppen = KOPPEN_SOURCE.sampleDitheredCode((double) worldX, (double) worldZ, worldScale);
-      int esaCode = LAND_COVER_SOURCE.sampleCoverClass((double) worldX, (double) worldZ, worldScale);
-      String esa = esaName(esaCode);
+      // This placement passed the coverClass == 10 (TreeCover) gate when prepared; reuse the
+      // captured class instead of re-sampling land cover, which can block on a tile download.
+      String esa = esaName(placement.coverClass());
       String paletteId = (koppen == null)
           ? TreePaletteRegistry.VANILLA_DEFAULT_ID
           : RegionalTreePlacer.resolvePaletteId(lat, lon, koppen, esa);
@@ -9311,7 +9313,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
    ) {
    }
 
-   private record PreparedTreePlacement(int worldX, int worldZ, int expectedSurface, Holder<Biome> biome, long seed) {
+   private record PreparedTreePlacement(int worldX, int worldZ, int expectedSurface, Holder<Biome> biome, long seed, int coverClass) {
    }
 
    @FunctionalInterface
