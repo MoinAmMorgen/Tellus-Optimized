@@ -308,11 +308,11 @@ public final class TellusWorldgenSources {
          return null;
       } else {
          TellusWorldgenSources.ThreadBounds bounds = resolveThreadBounds(
-            "tellus.prefetch.threads.min", "tellus.prefetch.threads.max", "tellus.prefetch.threads", 2, 8
+            "tellus.prefetch.threads.min", "tellus.prefetch.threads.max", "tellus.prefetch.threads", 4, 12
          );
          int minThreads = bounds.min();
          int maxThreads = bounds.max();
-         int queueSize = intProperty("tellus.prefetch.queue", 256);
+         int queueSize = intProperty("tellus.prefetch.queue", 1024);
          return createAdaptiveExecutor("tellus-prefetch-", minThreads, maxThreads, queueSize);
       }
    }

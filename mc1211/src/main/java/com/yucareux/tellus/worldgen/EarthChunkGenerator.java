@@ -200,7 +200,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
    private static final int BUILDING_SLICE_PADDING = 6;
    private static final boolean FULL_CHUNK_OSM_NON_BLOCKING = Boolean.parseBoolean(System.getProperty("tellus.osm.fullChunksNonBlocking", "false"));
    private static final boolean FAST_FULL_CHUNK = Boolean.parseBoolean(System.getProperty("tellus.chunkgen.fastFullChunk", "true"));
-   private static final boolean NON_BLOCKING_TERRAIN_INPUTS = Boolean.parseBoolean(System.getProperty("tellus.chunkgen.nonBlockingTerrainInputs", "false"));
+   private static final boolean NON_BLOCKING_TERRAIN_INPUTS = Boolean.parseBoolean(System.getProperty("tellus.chunkgen.nonBlockingTerrainInputs", "true"));
    private static final boolean MEMORY_ONLY_TERRAIN_CRITICAL_PATH = Boolean.parseBoolean(
       System.getProperty("tellus.chunkgen.memoryOnlyTerrainCriticalPath", "false")
    );
@@ -230,7 +230,7 @@ public final class EarthChunkGenerator extends ChunkGenerator {
    private static final int SPAWN_EXACT_CHUNK_RADIUS = intProperty("tellus.chunkgen.spawnExactChunkRadius", 2, 0, 16);
    private static final int MOVEMENT_PREFETCH_FORWARD_EXTRA = intProperty("tellus.prefetch.movement.forwardExtra", 2, 0, 32);
    private static final int MOVEMENT_PREFETCH_SIDE_EXTRA = intProperty("tellus.prefetch.movement.sideExtra", 1, 0, 32);
-   private static final int MOVEMENT_PREFETCH_TELEPORT_BURST_RADIUS = intProperty("tellus.prefetch.movement.teleportBurstRadius", 5, 0, 64);
+   private static final int MOVEMENT_PREFETCH_TELEPORT_BURST_RADIUS = intProperty("tellus.prefetch.movement.teleportBurstRadius", 8, 0, 64);
    private static final int MOVEMENT_PREFETCH_TELEPORT_THRESHOLD_CHUNKS = intProperty("tellus.prefetch.movement.teleportThresholdChunks", 3, 1, 64);
    private static final int MOVEMENT_PREFETCH_DIRECTION_CHANGE_MIN_DEGREES = intProperty("tellus.prefetch.movement.directionChangeDegrees", 60, 1, 180);
    private static final int MOVEMENT_PREFETCH_DIRECTION_CHANGE_COOLDOWN_TICKS = intProperty(
