@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -97,8 +98,18 @@ public final class TreeDataLoader {
                 URI uri = url.toURI();
                 Path base;
                 FileSystem fs = null;
+                boolean ownsFs = false;
                 if ("jar".equals(uri.getScheme())) {
-                    fs = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                    // The mod jar's zip filesystem is usually already mounted by the
+                    // mod loader. Creating a second one for the same URI throws
+                    // FileSystemAlreadyExistsException, so reuse the open one (and
+                    // don't close it, since we don't own it).
+                    try {
+                        fs = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                        ownsFs = true;
+                    } catch (FileSystemAlreadyExistsException alreadyOpen) {
+                        fs = FileSystems.getFileSystem(uri);
+                    }
                     base = fs.getPath("/" + root);
                 } else {
                     base = Paths.get(uri);
@@ -115,7 +126,7 @@ public final class TreeDataLoader {
                         }
                     });
                 } finally {
-                    if (fs != null) fs.close();
+                    if (fs != null && ownsFs) fs.close();
                 }
             }
         } catch (Exception e) {

@@ -1,9 +1,9 @@
 {
   "trees_per_chunk": 9,
   "species": [
-    { "id": "tellus:canadian/black_spruce_01", "weight": 30 },
-    { "id": "tellus:candaian/black_spruce_02", "weight": 20 },
-    { "id": "tellus:canadian/jack_pine_01",   "weight": 30 },
-    { "id": "tellus:canadian/paper_birch_01", "weight": 20 }
+    { "id": "tellus:canadian/black_spruce",    "weight": 30 },
+    { "id": "tellus:canadian/black_spruce_02", "weight": 20 },
+    { "id": "tellus:canadian/jack_pine",       "weight": 30 },
+    { "id": "tellus:canadian/paper_birch",     "weight": 20 }
   ]
 }

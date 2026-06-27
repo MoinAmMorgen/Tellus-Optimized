@@ -1,8 +1,6 @@
 {
   "trees_per_chunk": 9,
   "species": [
-    { "id": "tellus:canadian/balsam_fir",   "weight": 30 },
-    { "id": "tellus:canadian/sugar_maple",  "weight": 30 },
     { "id": "tellus:canadian/paper_birch",  "weight": 20 },
     { "id": "tellus:canadian/black_spruce", "weight": 20 }
   ]
