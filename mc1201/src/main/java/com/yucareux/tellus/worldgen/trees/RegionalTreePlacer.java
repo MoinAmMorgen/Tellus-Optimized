@@ -13,6 +13,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.levelgen.structure.templatesystem.BlockIgnoreProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
@@ -65,7 +66,10 @@ public final class RegionalTreePlacer {
         StructurePlaceSettings ps = new StructurePlaceSettings()
             .setRotation(rot)
             .setMirror(mir)
-            .setRandom(random);
+            .setRandom(random)
+            // Skip the template's air blocks so trees don't carve empty boxes into
+            // neighbouring trees/terrain (and don't spam setBlock into far chunks).
+            .addProcessor(BlockIgnoreProcessor.AIR);
         return template.placeInWorld(level, position, position, ps, random, 2);
     }
 }
